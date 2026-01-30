@@ -1,0 +1,25 @@
+we have raw data,
+we tokenize it,
+token id's are meaningless:
+'I' : "102"
+'love' : "702"
+'cats' : "496"
+
+we need to assign them (future-meaningful) values whose initial values do not mean anything.
+say x, //this is the embedding vector
+we assign x vector whose values are different than zero and relatively small,
+these values are meaningless for now, but we will work on them.
+'I' : "102" , {"0.2,"-0.3" ...}
+'love' : "702" ,{"-0.1","0.1" ... }
+'cats' : "496" , {"0.1", "0.1" ...}
+
+we assign arbitrary, relatively small values to weight matrix
+say: [ 0.1  -0.1 0.2
+       -0.3 0.2 0.1
+       0.1 -0.2 0.3 ]
+RNN processes values and compares the result with expected output,
+we found the loss. //loss calculated by variety of techniques
+RNN adjusts weight and x values of each token through BPTT.
+//BPTT: backpropagation through time
+we do this with many different sentences, preserving the embedding matrix (matrix of x vectors)
+model is trained.
