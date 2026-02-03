@@ -5,18 +5,40 @@ token id's are meaningless:
 'love' : "702"
 'cats' : "496"
 
-we need to assign them (future-meaningful) values whose initial values do not mean anything.
-say x, //this is the embedding vector
-we assign x vector whose values are different than zero and relatively small,
-these values are meaningless for now, but we will work on them.
-'I' : "102" , {"0.2,"-0.3" ...}
-'love' : "702" ,{"-0.1","0.1" ... }
-'cats' : "496" , {"0.1", "0.1" ...}
 
-we assign arbitrary, relatively small values to weight matrix
-say: [ 0.1  -0.1 0.2
-       -0.3 0.2 0.1
-       0.1 -0.2 0.3 ]
+we need to assign them (future-meaningful) values whose initial values do not mean anything.
+it is called embedding vectors
+we assign embedding vectors whose values are different than zero and relatively small,
+these values are meaningless for now, but we will work on them.
+'I' : "102" , {"0.2,"-0.3" ...} //thousands of entries.
+'love' : "702" ,{"-0.1","0.1" ... } //these entries are the words' 'meanings'
+'cats' : "496" , {"0.1", "0.1" ...} //the whole vocabulary's embedding vectors form embedding matrix
+d is the size of embedding vectors
+
+
+we assign arbitrary, relatively small values to weight matrices
+there are three weight matrices:
+W_x determines the effect of the current input
+	since W_x * x_t must have the same dimension as h_t,
+	W_x's size is h rows d columns hxd //h is the size of hidden state, explained in the next paragraph
+W_h determines the effect of the hidden state (history)
+	since W_h * h_t-1 must have the same dimenion as h_t
+	W_h's size is h rows h columns hxh 
+W_y determines how the hidden state is mapped to output predictions
+	since W_y * h_t must produce one score for each word in the vocabulary,
+	W_y's size is |V| rows and h columns (|V| x h)
+their values look like: 
+     [ 0.1  -0.1 0.2
+       -0.3 0.2  0.1
+       0.1  -0.2 0.3 ]
+
+
+every forward step in RNN requires a hidden state
+hidden state is formed by h_t = tanh(W_h * h_t-1 + W_x * x_t + b)
+			      //tanh is an activator	     //b means bias
+h is the size of hidden state vector
+
+
 RNN processes values and compares the result with expected output,
 we found the loss. //loss calculated by variety of techniques
 RNN adjusts weight and x values of each token through BPTT.
