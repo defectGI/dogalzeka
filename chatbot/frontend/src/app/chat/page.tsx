@@ -53,7 +53,7 @@ export default function ChatPage() {
         const response = await sendMessage(message, convId, token);
         appendToLastMessage(response);
       } catch (err: any) {
-        appendToLastMessage(`\n\n[Hata: ${err.message}]`);
+        appendToLastMessage(`[Hata: ${err.message}]`);
       } finally {
         setIsStreaming(false);
       }
