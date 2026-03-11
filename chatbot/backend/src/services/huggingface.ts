@@ -1,51 +1,42 @@
-import { Response } from 'express';
+import { logger } from '../logger';
 
 export interface ChatMessage {
   role: 'user' | 'assistant' | 'system';
   content: string;
 }
 
-const GRADIO_URL = 'https://defectgi-turkish-mistral7.hf.space/call/predict';
+const GRADIO_BASE = 'https://defectgi-turkish-mistral7.hf.space/call/predict';
 
-export async function streamChatCompletion(
-  messages: ChatMessage[],
-  res: Response
-): Promise<string> {
-  const lastUserMsg = messages.filter(m => m.role === 'user').at(-1)?.content || '';
-
-  // 1. event_id al
-  const initRes = await fetch(GRADIO_URL, {
+export async function getChatResponse(message: string): Promise<string> {
+  // Adım 1 — job başlat
+  const initRes = await fetch(GRADIO_BASE, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ data: [lastUserMsg, 200] }),
+    body: JSON.stringify({ data: [message, 200] }),
   });
 
   if (!initRes.ok) {
-    if (initRes.status === 503) throw new Error('MODEL_UNAVAILABLE');
     const errText = await initRes.text();
     throw new Error(`HuggingFace API error: ${initRes.status} — ${errText}`);
   }
 
   const { event_id } = await initRes.json() as { event_id: string };
+  logger.info('Gradio job started', { event_id });
 
-  // 2. Sonucu çek
-  const resultRes = await fetch(`${GRADIO_URL}/${event_id}`);
-  const text = await resultRes.text();
+  // Adım 2 — sonucu çek
+  const resultRes = await fetch(`${GRADIO_BASE}/${event_id}`);
 
-  const lines = text.split('\n').filter(l => l.startsWith('data:'));
-  const fullContent: string = JSON.parse(lines[lines.length - 1].replace('data: ', ''))[0];
-
-  // Kelime kelime SSE olarak gönder
-  res.setHeader('Content-Type', 'text/event-stream');
-  res.setHeader('Cache-Control', 'no-cache');
-  res.setHeader('Connection', 'keep-alive');
-
-  const words = fullContent.split(' ');
-  for (const word of words) {
-    res.write(`data: ${JSON.stringify({ delta: word + ' ' })}\n\n`);
-    await new Promise(r => setTimeout(r, 30));
+  if (!resultRes.ok) {
+    throw new Error(`Gradio result fetch error: ${resultRes.status}`);
   }
 
-  res.write('data: [DONE]\n\n');
-  return fullContent;
+  const text = await resultRes.text();
+  const lines = text.split('\n').filter(l => l.startsWith('data:'));
+
+  if (lines.length === 0) {
+    throw new Error('No data lines in Gradio SSE response');
+  }
+
+  const response: string = JSON.parse(lines[lines.length - 1].replace('data: ', ''))[0];
+  return response;
 }
