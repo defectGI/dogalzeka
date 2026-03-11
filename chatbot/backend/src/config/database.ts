@@ -49,7 +49,8 @@ export async function initDatabase(): Promise<void> {
       )
     `);
 
-    console.log('Database tables initialized');
+    const { logger } = await import('../logger');
+    logger.info('Database tables initialized');
   } finally {
     conn.release();
   }

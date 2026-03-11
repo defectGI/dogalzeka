@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { pool } from '../config/database';
 import { streamChatCompletion, ChatMessage } from '../services/huggingface';
+import { logger } from '../logger';
 
 export async function sendMessage(req: Request, res: Response): Promise<void> {
   const { message, conversationId } = req.body;
@@ -82,7 +83,7 @@ export async function sendMessage(req: Request, res: Response): Promise<void> {
 
     res.end();
   } catch (err: any) {
-    console.error('Chat error:', err);
+    logger.error('Chat error', { message: (err as any).message });
     const message = err?.message === 'MODEL_UNAVAILABLE'
       ? 'Model şu an aktif değil, lütfen biraz bekleyip tekrar dene.'
       : 'Yanıt alınamadı, lütfen tekrar dene.';

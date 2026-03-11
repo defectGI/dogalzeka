@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { pool } from '../config/database';
+import { logger } from '../logger';
 
 export async function register(req: Request, res: Response): Promise<void> {
   const { username, email, password } = req.body;
@@ -35,7 +36,7 @@ export async function register(req: Request, res: Response): Promise<void> {
     if (err.code === 'ER_DUP_ENTRY') {
       res.status(409).json({ error: 'Username or email already exists' });
     } else {
-      console.error('Register error:', err);
+      logger.error('Register error', { message: (err as any).message });
       res.status(500).json({ error: 'Internal server error' });
     }
   }
@@ -75,7 +76,7 @@ export async function login(req: Request, res: Response): Promise<void> {
 
     res.json({ token, user: { id: user.id, username: user.username, email: user.email } });
   } catch (err) {
-    console.error('Login error:', err);
+    logger.error('Login error', { message: (err as any).message });
     res.status(500).json({ error: 'Internal server error' });
   }
 }

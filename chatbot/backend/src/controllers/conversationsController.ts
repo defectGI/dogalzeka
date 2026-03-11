@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { pool } from '../config/database';
+import { logger } from '../logger';
 
 export async function getConversations(req: Request, res: Response): Promise<void> {
   if (!req.user) {
@@ -15,7 +16,7 @@ export async function getConversations(req: Request, res: Response): Promise<voi
 
     res.json({ conversations: rows });
   } catch (err) {
-    console.error('Get conversations error:', err);
+    logger.error('Get conversations error', { message: (err as any).message });
     res.status(500).json({ error: 'Internal server error' });
   }
 }
@@ -42,7 +43,7 @@ export async function createConversation(req: Request, res: Response): Promise<v
 
     res.status(201).json({ conversation: rows[0] });
   } catch (err) {
-    console.error('Create conversation error:', err);
+    logger.error('Create conversation error', { message: (err as any).message });
     res.status(500).json({ error: 'Internal server error' });
   }
 }
@@ -74,7 +75,7 @@ export async function getMessages(req: Request, res: Response): Promise<void> {
 
     res.json({ messages: rows });
   } catch (err) {
-    console.error('Get messages error:', err);
+    logger.error('Get messages error', { message: (err as any).message });
     res.status(500).json({ error: 'Internal server error' });
   }
 }
@@ -100,7 +101,7 @@ export async function deleteConversation(req: Request, res: Response): Promise<v
 
     res.json({ success: true });
   } catch (err) {
-    console.error('Delete conversation error:', err);
+    logger.error('Delete conversation error', { message: (err as any).message });
     res.status(500).json({ error: 'Internal server error' });
   }
 }
