@@ -14,6 +14,11 @@ export async function sendMessage(
     body: JSON.stringify({ message, conversationId }),
   });
 
+  const contentType = res.headers.get('content-type') || '';
+  if (!contentType.includes('application/json')) {
+    throw new Error(`Sunucudan geçersiz yanıt alındı (${res.status}). API URL'ini kontrol et.`);
+  }
+
   const data = await res.json();
 
   if (!res.ok) {
