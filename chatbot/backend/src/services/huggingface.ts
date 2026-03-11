@@ -5,83 +5,44 @@ export interface ChatMessage {
   content: string;
 }
 
-const HF_API_KEY = process.env.HF_API_KEY || '';
-const HF_MODEL_ID = process.env.HF_MODEL_ID || 'mistralai/Mistral-7B-Instruct-v0.3';
-const HF_API_URL = `https://router.huggingface.co/hf-inference/v1/chat/completions`;
+const GRADIO_URL = 'https://defectgi-turkish-mistral7.hf.space/run/predict';
 
 // Stream response to client via SSE
 export async function streamChatCompletion(
   messages: ChatMessage[],
   res: Response
 ): Promise<string> {
-  // Dev mode mock when no API key
-  if (!HF_API_KEY || HF_API_KEY === 'hf_xxx') {
-    return mockStream(messages, res);
-  }
+  // Son kullanıcı mesajını al
+  const lastUserMsg = messages.filter(m => m.role === 'user').at(-1)?.content || '';
 
-  const response = await fetch(HF_API_URL, {
+  const response = await fetch(GRADIO_URL, {
     method: 'POST',
-    headers: {
-      Authorization: `Bearer ${HF_API_KEY}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model: HF_MODEL_ID,
-      messages,
-      max_tokens: 1024,
-      stream: true,
-    }),
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ data: [lastUserMsg, 200] }),
   });
 
   if (!response.ok) {
-    if (response.status === 503) {
-      throw new Error('MODEL_UNAVAILABLE');
-    }
+    if (response.status === 503) throw new Error('MODEL_UNAVAILABLE');
     const errText = await response.text();
     throw new Error(`HuggingFace API error: ${response.status} — ${errText}`);
   }
 
-  if (!response.body) {
-    throw new Error('No response body from HuggingFace API');
-  }
+  const result = await response.json() as { data: string[] };
+  const fullContent = result.data[0] || '';
 
-  // Set SSE headers (caller should have already set them, but ensure)
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
   res.setHeader('Connection', 'keep-alive');
 
-  const reader = response.body.getReader();
-  const decoder = new TextDecoder();
-  let fullContent = '';
-
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-
-    const chunk = decoder.decode(value, { stream: true });
-    const lines = chunk.split('\n');
-
-    for (const line of lines) {
-      if (!line.startsWith('data: ')) continue;
-      const data = line.slice(6).trim();
-      if (data === '[DONE]') {
-        res.write('data: [DONE]\n\n');
-        continue;
-      }
-
-      try {
-        const parsed = JSON.parse(data);
-        const delta = parsed.choices?.[0]?.delta?.content || '';
-        if (delta) {
-          fullContent += delta;
-          res.write(`data: ${JSON.stringify({ delta })}\n\n`);
-        }
-      } catch {
-        // skip malformed lines
-      }
-    }
+  // Kelime kelime stream et
+  const words = fullContent.split(' ');
+  for (const word of words) {
+    const delta = word + ' ';
+    res.write(`data: ${JSON.stringify({ delta })}\n\n`);
+    await new Promise(r => setTimeout(r, 30));
   }
 
+  res.write('data: [DONE]\n\n');
   return fullContent;
 }
 
@@ -102,33 +63,4 @@ async function mockStream(messages: ChatMessage[], res: Response): Promise<strin
 
   res.write('data: [DONE]\n\n');
   return mockResponse;
-}
-
-// Non-streaming version (for internal use)
-export async function getChatCompletion(messages: ChatMessage[]): Promise<string> {
-  if (!HF_API_KEY || HF_API_KEY === 'hf_xxx') {
-    const lastUserMsg = messages.filter(m => m.role === 'user').at(-1)?.content || '';
-    return `[Dev mock] Mesajınız: "${lastUserMsg}"`;
-  }
-
-  const response = await fetch(HF_API_URL, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${HF_API_KEY}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model: HF_MODEL_ID,
-      messages,
-      max_tokens: 1024,
-      stream: false,
-    }),
-  });
-
-  if (!response.ok) {
-    throw new Error(`HuggingFace API error: ${response.status}`);
-  }
-
-  const data = await response.json() as { choices: { message: { content: string } }[] };
-  return data.choices[0]?.message?.content || '';
 }
