@@ -7,7 +7,7 @@ export interface ChatMessage {
 
 const HF_API_KEY = process.env.HF_API_KEY || '';
 const HF_MODEL_ID = process.env.HF_MODEL_ID || 'mistralai/Mistral-7B-Instruct-v0.3';
-const HF_API_URL = `https://router.huggingface.co/models/${HF_MODEL_ID}/v1/chat/completions`;
+const HF_API_URL = `https://router.huggingface.co/hf-inference/v1/chat/completions`;
 
 // Stream response to client via SSE
 export async function streamChatCompletion(
