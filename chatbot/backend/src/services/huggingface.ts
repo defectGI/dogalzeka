@@ -17,7 +17,7 @@ export async function getChatResponse(message: string): Promise<string> {
   const res = await fetch(`${HF_SPACE}/predict`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ data: [message, 200] }),
+    body: JSON.stringify({ message, max_tokens: 200 }),
   });
 
   if (!res.ok) {
