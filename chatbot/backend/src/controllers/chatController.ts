@@ -81,12 +81,15 @@ export async function sendMessage(req: Request, res: Response): Promise<void> {
     }
 
     res.end();
-  } catch (err) {
+  } catch (err: any) {
     console.error('Chat error:', err);
+    const message = err?.message === 'MODEL_UNAVAILABLE'
+      ? 'Model şu an aktif değil, lütfen biraz bekleyip tekrar dene.'
+      : 'Yanıt alınamadı, lütfen tekrar dene.';
     if (!res.headersSent) {
-      res.status(500).json({ error: 'Failed to get AI response' });
+      res.status(500).json({ error: message });
     } else {
-      res.write(`data: ${JSON.stringify({ error: 'Stream error' })}\n\n`);
+      res.write(`data: ${JSON.stringify({ error: message })}\n\n`);
       res.end();
     }
   }

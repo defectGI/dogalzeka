@@ -34,6 +34,9 @@ export async function streamChatCompletion(
   });
 
   if (!response.ok) {
+    if (response.status === 503) {
+      throw new Error('MODEL_UNAVAILABLE');
+    }
     const errText = await response.text();
     throw new Error(`HuggingFace API error: ${response.status} — ${errText}`);
   }
