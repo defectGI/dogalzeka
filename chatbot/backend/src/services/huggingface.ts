@@ -31,8 +31,8 @@ export async function getChatResponse(message: string): Promise<string> {
     throw new Error(`HuggingFace API error: ${res.status} — ${errText}`);
   }
 
-  const result = await res.json() as { data: string[] };
-  const response = result.data[0];
+  const result = await res.json() as { response?: string; data?: string[] };
+  const response = result.response ?? result.data?.[0];
 
   if (!response) {
     throw new Error('Empty response from Space');
