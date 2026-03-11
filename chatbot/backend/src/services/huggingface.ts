@@ -14,7 +14,7 @@ async function wakeSpace(): Promise<void> {
 }
 
 export async function getChatResponse(message: string): Promise<string> {
-  const res = await fetch(`${HF_SPACE}/run/predict`, {
+  const res = await fetch(`${HF_SPACE}/predict`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ data: [message, 200] }),
