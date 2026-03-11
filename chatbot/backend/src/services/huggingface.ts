@@ -5,38 +5,20 @@ export interface ChatMessage {
   content: string;
 }
 
-const GRADIO_BASE = 'https://defectgi-turkish-mistral7.hf.space/call/predict';
+const GRADIO_URL = 'https://defectgi-turkish-mistral7.hf.space/predict';
 
 export async function getChatResponse(message: string): Promise<string> {
-  // Adım 1 — job başlat
-  const initRes = await fetch(GRADIO_BASE, {
+  const res = await fetch(GRADIO_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ data: [message, 200] }),
+    body: JSON.stringify({ message, max_tokens: 200 }),
   });
 
-  if (!initRes.ok) {
-    const errText = await initRes.text();
-    throw new Error(`HuggingFace API error: ${initRes.status} — ${errText}`);
+  if (!res.ok) {
+    const errText = await res.text();
+    throw new Error(`HuggingFace API error: ${res.status} — ${errText}`);
   }
 
-  const { event_id } = await initRes.json() as { event_id: string };
-  logger.info('Gradio job started', { event_id });
-
-  // Adım 2 — sonucu çek
-  const resultRes = await fetch(`${GRADIO_BASE}/${event_id}`);
-
-  if (!resultRes.ok) {
-    throw new Error(`Gradio result fetch error: ${resultRes.status}`);
-  }
-
-  const text = await resultRes.text();
-  const lines = text.split('\n').filter(l => l.startsWith('data:'));
-
-  if (lines.length === 0) {
-    throw new Error('No data lines in Gradio SSE response');
-  }
-
-  const response: string = JSON.parse(lines[lines.length - 1].replace('data: ', ''))[0];
-  return response;
+  const data = await res.json() as { response: string };
+  return data.response;
 }
