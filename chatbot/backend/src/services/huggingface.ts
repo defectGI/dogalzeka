@@ -31,13 +31,12 @@ export async function getChatResponse(message: string): Promise<string> {
     throw new Error(`HuggingFace API error: ${res.status} — ${errText}`);
   }
 
-  const result = await res.json() as { response?: string; data?: string[] };
-  const response = result.response ?? result.data?.[0];
+  const data = await res.json() as { response: string };
 
-  if (!response) {
+  if (!data.response) {
     throw new Error('Empty response from Space');
   }
 
-  logger.info('Gradio response received', { length: response.length });
-  return response;
+  logger.info('HuggingFace response received', { length: data.response.length });
+  return data.response;
 }
