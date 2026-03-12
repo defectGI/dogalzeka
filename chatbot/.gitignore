@@ -9,3 +9,4 @@ backend/.env
 frontend/.env
 *.local
 .DS_Store
+.claude/
