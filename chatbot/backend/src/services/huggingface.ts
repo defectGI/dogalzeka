@@ -1,7 +1,7 @@
 import { logger } from '../logger';
 
 export interface ChatMessage {
-  role: 'user' | 'assistant' | 'system';
+  role: 'user' | 'assistant';
   content: string;
 }
 
@@ -13,15 +13,15 @@ async function wakeSpace(): Promise<void> {
   } catch (_) {}
 }
 
-export async function getChatResponse(message: string): Promise<string> {
-  logger.info('HF request sending', { url: `${HF_SPACE}/predict`, messageLength: message.length });
+export async function getChatResponse(messages: ChatMessage[]): Promise<string> {
+  logger.info('HF request sending', { url: `${HF_SPACE}/predict`, messageCount: messages.length });
 
   let res: Response;
   try {
     res = await fetch(`${HF_SPACE}/predict`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message, max_tokens: 200 }),
+      body: JSON.stringify({ messages, max_tokens: 200 }),
     });
   } catch (fetchErr: any) {
     logger.error('HF fetch failed (network error)', { error: fetchErr?.message });

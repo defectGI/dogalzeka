@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { pool } from '../config/database';
-import { getChatResponse } from '../services/huggingface';
+import { getChatResponse, ChatMessage } from '../services/huggingface';
 import { logger } from '../logger';
 
 export async function sendMessage(req: Request, res: Response): Promise<void> {
@@ -15,8 +15,10 @@ export async function sendMessage(req: Request, res: Response): Promise<void> {
   const convId: number | null = conversationId ? parseInt(conversationId) : null;
 
   try {
-    // Konuşma kullanıcıya ait mi kontrol et
+    let history: ChatMessage[] = [];
+
     if (user && convId) {
+      // Konuşma kullanıcıya ait mi kontrol et
       const [convRows] = await pool.execute(
         'SELECT id FROM conversations WHERE id = ? AND user_id = ?',
         [convId, user.userId]
@@ -27,6 +29,14 @@ export async function sendMessage(req: Request, res: Response): Promise<void> {
         return;
       }
 
+      // Önceki mesajları çek (sliding window için)
+      const [historyRows] = await pool.execute(
+        'SELECT role, content FROM messages WHERE conversation_id = ? ORDER BY created_at ASC',
+        [convId]
+      ) as any[];
+
+      history = historyRows.map((r: any) => ({ role: r.role, content: r.content }));
+
       // Kullanıcı mesajını kaydet
       await pool.execute(
         'INSERT INTO messages (conversation_id, role, content) VALUES (?, ?, ?)',
@@ -34,10 +44,12 @@ export async function sendMessage(req: Request, res: Response): Promise<void> {
       );
     }
 
-    const response = await getChatResponse(message.trim());
+    // Geçmiş + mevcut mesaj → modele gönder
+    const messages: ChatMessage[] = [...history, { role: 'user', content: message.trim() }];
+    const response = await getChatResponse(messages);
 
-    // Assistant mesajını kaydet
     if (user && convId) {
+      // Assistant cevabını kaydet
       await pool.execute(
         'INSERT INTO messages (conversation_id, role, content) VALUES (?, ?, ?)',
         [convId, 'assistant', response]
