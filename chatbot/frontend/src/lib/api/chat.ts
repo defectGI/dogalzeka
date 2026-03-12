@@ -4,14 +4,15 @@ export async function sendMessage(
   message: string,
   conversationId: number | null,
   token: string | null,
-): Promise<string> {
+  sessionId?: string,
+): Promise<{ response: string; conversationId: number | null }> {
   const res = await fetch(`${API_URL}/api/chat/message`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
-    body: JSON.stringify({ message, conversationId }),
+    body: JSON.stringify({ message, conversationId, sessionId }),
   });
 
   const contentType = res.headers.get('content-type') || '';
@@ -25,5 +26,5 @@ export async function sendMessage(
     throw new Error(data.error || 'Yanıt alınamadı');
   }
 
-  return data.response;
+  return { response: data.response, conversationId: data.conversationId ?? null };
 }

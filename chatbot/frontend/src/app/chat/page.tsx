@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { Info } from 'lucide-react';
 import { ChatSidebar } from '@/components/chat/ChatSidebar';
@@ -11,6 +11,17 @@ import { useAuthModalStore } from '@/stores/auth-modal-store';
 import { useChatStore } from '@/stores/chat-store';
 import { sendMessage } from '@/lib/api/chat';
 import { createConversation } from '@/lib/api/conversations';
+
+const SESSION_KEY = 'guest_session_id';
+
+function getOrCreateSessionId(): string {
+  let id = localStorage.getItem(SESSION_KEY);
+  if (!id) {
+    id = uuidv4();
+    localStorage.setItem(SESSION_KEY, id);
+  }
+  return id;
+}
 
 export default function ChatPage() {
   const { user, token } = useAuthStore();
@@ -24,6 +35,14 @@ export default function ChatPage() {
     setIsStreaming,
     isStreaming,
   } = useChatStore();
+
+  const sessionIdRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!user) {
+      sessionIdRef.current = getOrCreateSessionId();
+    }
+  }, [user]);
 
   const handleSend = useCallback(
     async (message: string) => {
@@ -50,8 +69,14 @@ export default function ChatPage() {
       }
 
       try {
-        const response = await sendMessage(message, convId, token);
-        appendToLastMessage(response);
+        const sessionId = !user ? (sessionIdRef.current ?? undefined) : undefined;
+        const result = await sendMessage(message, convId, token, sessionId);
+        appendToLastMessage(result.response);
+
+        // Misafir için backend'den dönen conversationId'yi sakla
+        if (!user && result.conversationId && !activeConversationId) {
+          setActiveConversation(result.conversationId);
+        }
       } catch (err: any) {
         appendToLastMessage(`[Hata: ${err.message}]`);
       } finally {
@@ -79,7 +104,7 @@ export default function ChatPage() {
           <div className="flex items-center gap-2 px-4 py-2 bg-primary/10 border-b border-primary/20 text-sm text-primary">
             <Info className="h-4 w-4 flex-shrink-0" />
             <span>
-              Sohbet geçmişini kaydetmek için{' '}
+              Oturum boyunca sohbet hafızada tutulur. Kalıcı geçmiş için{' '}
               <button onClick={openLogin} className="underline font-medium hover:text-primary/80">
                 giriş yap
               </button>

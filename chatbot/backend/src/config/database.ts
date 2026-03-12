@@ -30,13 +30,20 @@ export async function initDatabase(): Promise<void> {
     await conn.execute(`
       CREATE TABLE IF NOT EXISTS conversations (
         id INT AUTO_INCREMENT PRIMARY KEY,
-        user_id INT NOT NULL,
+        user_id INT NULL,
+        session_id VARCHAR(36) NULL,
         title VARCHAR(255) NOT NULL DEFAULT 'New Conversation',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
       )
     `);
+
+    // Migration: mevcut tabloya session_id ekle (zaten varsa hata yakalanır)
+    try {
+      await conn.execute(`ALTER TABLE conversations ADD COLUMN IF NOT EXISTS session_id VARCHAR(36) NULL`);
+      await conn.execute(`ALTER TABLE conversations MODIFY COLUMN user_id INT NULL`);
+    } catch (_) {}
 
     await conn.execute(`
       CREATE TABLE IF NOT EXISTS messages (
