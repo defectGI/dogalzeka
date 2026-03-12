@@ -116,6 +116,10 @@ GET /api/health  →  { "status": "ok", "timestamp": "..." }
 Space URL: `https://defectgi-turkish-mistral7.hf.space`
 Model repo: `defectGI/defectgi` (Mistral-7B + LoRA fine-tune)
 
+**Eğitim Veriseti:**
+- [Wikipedia Turkish](https://huggingface.co/datasets/wikipedia) — Türkçe Wikipedia dump'ı (ana kaynak)
+- [CulturaX Turkish](https://huggingface.co/datasets/uonlp/CulturaX) — çok dilli web corpus, Türkçe alt kümesi
+
 **Space API:**
 ```
 POST /predict
