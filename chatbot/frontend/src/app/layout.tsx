@@ -16,7 +16,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="tr" suppressHydrationWarning>
       <body className={inter.className}>
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+        <ThemeProvider attribute="class" defaultTheme="clay" themes={['light', 'dark', 'clay']}>
           <div className="flex flex-col h-screen overflow-hidden">
             <Header />
             <main className="flex flex-1 overflow-hidden">{children}</main>
